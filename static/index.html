@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SMS Bridge</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080810;--s1:#0e0e1a;--s2:#13131f;--s3:#1a1a28;
+  --border:#1f1f32;--border2:#2a2a40;
+  --accent:#6366f1;--accent2:#818cf8;--ag:rgba(99,102,241,.15);
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+  --text:#f0f0f8;--muted:#5a5a7a;--muted2:#3a3a55;
+  --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;
+  --r:14px;--r2:10px;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+body::before{content:'';position:fixed;top:-300px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(99,102,241,.06) 0%,transparent 65%);pointer-events:none}
+.app{max-width:1140px;margin:0 auto;padding:28px 16px}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.brand-name{font-size:18px;font-weight:700}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.pill{background:var(--s2);border:1px solid var(--border);border-radius:100px;padding:5px 12px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.btn{background:var(--accent);border:none;color:#fff;font-family:var(--sans);font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--sans);font-size:11px;padding:6px 12px;border-radius:8px;cursor:pointer;transition:all .2s}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger:hover{border-color:var(--red);color:var(--red)}
+
+/* Lock */
+.lock{max-width:400px;margin:80px auto;text-align:center}
+.lock-icon{font-size:44px;margin-bottom:16px}
+.lock h2{font-size:20px;font-weight:700;margin-bottom:8px}
+.lock p{font-size:13px;color:var(--muted);margin-bottom:28px}
+.lock-input{display:flex;gap:8px;margin-top:16px}
+.lock-input input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none}
+.lock-input input:focus{border-color:var(--accent)}
+
+/* Grid */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;margin-bottom:10px}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card::after{content:'';position:absolute;top:0;right:0;width:100px;height:100px;background:radial-gradient(circle,var(--ag) 0%,transparent 70%);pointer-events:none}
+
+/* Stats */
+.sc{grid-column:span 3}
+.slabel{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.sval{font-size:34px;font-weight:700;line-height:1;letter-spacing:-1px;margin-bottom:4px}
+.ssub{font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+/* Global toggle */
+.gtoggle{grid-column:span 12;display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+.gtoggle h3{font-size:14px;font-weight:600;margin-bottom:2px}
+.gtoggle p{font-size:12px;color:var(--muted)}
+
+/* Toggle */
+.tgl{position:relative;width:48px;height:26px;cursor:pointer;flex-shrink:0}
+.tgl input{display:none}
+.tgl-track{position:absolute;inset:0;background:var(--s3);border:1px solid var(--border2);border-radius:100px;transition:all .3s}
+.tgl input:checked+.tgl-track{background:var(--accent);border-color:var(--accent);box-shadow:0 0 14px rgba(99,102,241,.4)}
+.tgl-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;z-index:1}
+.tgl input:checked~.tgl-thumb{transform:translateX(22px)}
+
+/* Device bentos */
+.devs-card{grid-column:span 12}
+.devs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.dev-bento{background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;cursor:pointer;transition:border-color .2s}
+.dev-bento:hover{border-color:var(--border2)}
+.dev-bento.selected{border-color:var(--accent)}
+.dev-top{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sdot.active{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+.sdot.idle{background:var(--amber)}
+.sdot.unknown{background:var(--muted)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.dev-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dev-phone{font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px}
+.dev-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dstat{background:var(--s1);border-radius:8px;padding:10px}
+.dstat-l{font-size:10px;color:var(--muted);margin-bottom:3px}
+.dstat-v{font-size:18px;font-weight:700;font-family:var(--mono)}
+.dev-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.err-badge{display:inline-block;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;margin-top:4px}
+
+/* Device detail panel */
+.dev-detail{grid-column:span 12;display:none}
+.dev-detail.open{display:block}
+.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.detail-header h3{font-size:16px;font-weight:700}
+.detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+.detail-body{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.detail-section{background:var(--s2);border-radius:var(--r2);padding:14px}
+.detail-section h4{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+.detail-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px}
+.detail-row span{color:var(--muted);font-size:12px}
+.detail-row strong{font-family:var(--mono);font-size:12px}
+.edit-input{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;width:100%}
+.edit-input:focus{border-color:var(--accent)}
+.map-link{font-size:12px;color:var(--accent2);text-decoration:none}
+.map-link:hover{text-decoration:underline}
+
+/* Feed */
+.feed-card{grid-column:span 12}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sec-title{font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.feed{display:flex;flex-direction:column;gap:7px;max-height:440px;overflow-y:auto;padding-right:3px}
+.feed::-webkit-scrollbar{width:3px}
+.feed::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.msg{display:grid;grid-template-columns:32px 1fr auto;gap:10px;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.msg-icon{width:32px;height:32px;border-radius:8px;background:var(--ag);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;font-size:14px}
+.msg-sender{font-family:var(--mono);font-size:11px;color:var(--accent2);font-weight:500;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dev-tag{font-size:10px;background:var(--ag);border:1px solid rgba(99,102,241,.2);color:var(--accent2);padding:1px 7px;border-radius:100px}
+.msg-body{font-size:13px;color:#b0b0c8;line-height:1.4;word-break:break-word}
+.msg-fwd{font-size:10px;margin-top:3px}
+.msg-fwd.ok{color:var(--green)}
+.msg-fwd.fail{color:var(--red)}
+.msg-time{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap}
+
+/* Logs */
+.log-card{grid-column:span 12}
+.log-item{padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;display:flex;align-items:flex-start;gap:10px}
+.log-ev{font-size:11px;font-family:var(--mono);color:var(--accent2);min-width:120px}
+.log-detail{font-size:12px;color:#b0b0c8;flex:1}
+.log-dev{font-size:10px;color:var(--muted)}
+.log-time{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap}
+.log-new_device{border-color:rgba(34,197,94,.2)}
+.log-new_device .log-ev{color:var(--green)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:14px}
+.tab{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--sans);font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;transition:all .2s}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:var(--r);padding:24px;width:360px;max-width:90vw}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
+.modal input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;margin-bottom:14px}
+.modal input:focus{border-color:var(--accent)}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:32px;margin-bottom:10px;opacity:.3}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;z-index:99}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{border-color:rgba(34,197,94,.3);color:var(--green)}
+.toast.err{border-color:rgba(239,68,68,.3);color:var(--red)}
+@media(max-width:700px){.sc{grid-column:span 6}.detail-body{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Lock screen -->
+  <div id="lockScreen" class="lock">
+    <div class="lock-icon">🔐</div>
+    <h2>SMS Bridge</h2>
+    <p>Enter your secret key to access the dashboard</p>
+    <div class="lock-input">
+      <input type="password" id="secIn" placeholder="bridge_x9k2m7p4q1" onkeydown="if(event.key==='Enter')unlock()"/>
+      <button class="btn" onclick="unlock()">Unlock</button>
+    </div>
+  </div>
+
+  <!-- Main dashboard -->
+  <div id="mainDash" style="display:none">
+
+    <div class="header">
+      <div class="brand"><div class="dot"></div><span class="brand-name">SMS Bridge</span></div>
+      <div class="hdr-right">
+        <span class="pill">nikshepotp254.up.railway.app</span>
+        <button class="btn-ghost" onclick="showTab('logs')">Logs</button>
+        <button class="btn" id="rfBtn" onclick="load()">Refresh</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid">
+      <div class="card sc"><div class="slabel">Total SMS</div><div class="sval" id="sTotal">—</div><div class="ssub">all time</div></div>
+      <div class="card sc"><div class="slabel">Forwarded</div><div class="sval" style="color:var(--green)" id="sFwd">—</div><div class="ssub">to telegram</div></div>
+      <div class="card sc"><div class="slabel">Retry Queue</div><div class="sval" style="color:var(--amber)" id="sRetry">—</div><div class="ssub">pending</div></div>
+      <div class="card sc"><div class="slabel">Devices</div><div class="sval" style="color:var(--accent2)" id="sDevices">—</div><div class="ssub">registered</div></div>
+    </div>
+
+    <!-- Global toggle -->
+    <div class="grid">
+      <div class="card gtoggle">
+        <div><h3>Global Forwarding</h3><p id="gdesc">Loading...</p></div>
+        <label class="tgl"><input type="checkbox" id="gTgl" onchange="onGlobal(this)"/><div class="tgl-track"></div><div class="tgl-thumb"></div></label>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" id="tab-devices" onclick="showTab('devices')">Devices</button>
+      <button class="tab" id="tab-messages" onclick="showTab('messages')">Messages</button>
+      <button class="tab" id="tab-logs" onclick="showTab('logs')">Logs</button>
+    </div>
+
+    <!-- Devices tab -->
+    <div id="pane-devices">
+      <div class="grid">
+        <div class="card devs-card">
+          <div class="section-hdr"><span class="sec-title">Devices</span></div>
+          <div class="devs-grid" id="devsGrid"><div class="empty"><div class="empty-icon">📱</div>No devices yet</div></div>
+        </div>
+      </div>
+      <!-- Device detail -->
+      <div class="grid">
+        <div class="card dev-detail" id="devDetail">
+          <div class="detail-header">
+            <h3 id="detailTitle">Device Detail</h3>
+            <div class="detail-actions">
+              <button class="btn-ghost" onclick="openRename()">Rename</button>
+              <button class="btn-ghost" onclick="openSetPhone()">Set Phone #</button>
+              <button class="btn-ghost btn-danger" onclick="closeDetail()">Close ✕</button>
+            </div>
+          </div>
+          <div class="detail-body" id="detailBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages tab -->
+    <div id="pane-messages" style="display:none">
+      <div class="grid">
+        <div class="card feed-card">
+          <div class="section-hdr">
+            <span class="sec-title">Messages</span>
+            <button class="btn-ghost btn-danger" onclick="clearMsgs()">Clear all</button>
+          </div>
+          <div class="feed" id="feed"><div class="empty"><div class="empty-icon">📭</div>No messages</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logs tab -->
+    <div id="pane-logs" style="display:none">
+      <div class="grid">
+        <div class="card log-card">
+          <div class="section-hdr"><span class="sec-title">Event Logs</span></div>
+          <div id="logsContainer"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /mainDash -->
+</div>
+
+<!-- Rename modal -->
+<div class="modal-bg" id="renameModal">
+  <div class="modal">
+    <h3>Rename Device</h3>
+    <input id="renameInput" type="text" placeholder="New display name"/>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeModal('renameModal')">Cancel</button>
+      <button class="btn" onclick="doRename()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Set phone modal -->
+<div class="modal-bg" id="phoneModal">
+  <div class="modal">
+    <h3>Set Phone Number</h3>
+    <input id="phoneInput" type="text" placeholder="+91XXXXXXXXXX"/>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeModal('phoneModal')">Cancel</button>
+      <button class="btn" onclick="doSetPhone()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let SEC = localStorage.getItem('sb_sec') || '';
+let state = {};
+let selectedDevice = null;
+
+function unlock() {
+  const v = document.getElementById('secIn').value.trim();
+  if (!v) return toast('Enter secret key','err');
+  SEC = v; localStorage.setItem('sb_sec', SEC);
+  document.getElementById('lockScreen').style.display='none';
+  document.getElementById('mainDash').style.display='block';
+  load();
+}
+if (SEC) { document.getElementById('lockScreen').style.display='none'; document.getElementById('mainDash').style.display='block'; }
+
+async function api(path, opts={}) {
+  try {
+    const r = await fetch(API+path, {...opts, headers:{'x-secret':SEC,'Content-Type':'application/json',...(opts.headers||{})}});
+    if (r.status===401) { toast('Wrong secret','err'); return null; }
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  } catch(e) { toast('Error: '+e.message,'err'); return null; }
+}
+
+async function load() {
+  if (!SEC) return;
+  const btn = document.getElementById('rfBtn');
+  btn.innerHTML='<span class="spin"></span>'; btn.disabled=true;
+  const d = await api('/dashboard');
+  btn.innerHTML='Refresh'; btn.disabled=false;
+  if (d) { state=d; render(d); }
+}
+
+function render(d) {
+  document.getElementById('sTotal').textContent   = d.total??'—';
+  document.getElementById('sFwd').textContent     = d.forwarded??'—';
+  document.getElementById('sRetry').textContent   = d.retry_pending??'—';
+  document.getElementById('sDevices').textContent = (d.devices||[]).length;
+  document.getElementById('gTgl').checked = d.global_enabled;
+  document.getElementById('gdesc').textContent = d.global_enabled
+    ? 'All SMS are being forwarded to Telegram'
+    : 'Forwarding is paused globally';
+  renderDevices(d.devices||[]);
+  renderFeed(d.messages||[]);
+  renderLogs(d.events||[]);
+  if (selectedDevice) {
+    const dev = (d.devices||[]).find(x=>x.device_id===selectedDevice);
+    if (dev) showDetail(dev);
+  }
+}
+
+function renderDevices(devs) {
+  const el = document.getElementById('devsGrid');
+  if (!devs.length) { el.innerHTML='<div class="empty"><div class="empty-icon">📱</div>No devices yet — install APK on a phone first</div>'; return; }
+  el.innerHTML = devs.map(d=>{
+    const dot = d.status==='active'?'active':d.status==='idle'?'idle':'unknown';
+    const ls = d.last_seen ? timeAgo(d.last_seen) : 'Never';
+    const errHtml = d.last_error ? `<div class="err-badge">Error ${d.last_error}: ${esc(d.error_desc)}</div>` : '';
+    const phone = d.phone_number ? `<div class="dev-phone">📞 ${esc(d.phone_number)}</div>` : '';
+    return `
+    <div class="dev-bento ${selectedDevice===d.device_id?'selected':''}" onclick="selectDevice('${esc(d.device_id)}')">
+      <div class="dev-top">
+        <span class="sdot ${dot}"></span>
+        <span class="dev-name">${esc(d.display_name)}</span>
+        <label class="tgl" onclick="event.stopPropagation()">
+          <input type="checkbox" ${d.enabled?'checked':''} onchange="onDevToggle(this,'${esc(d.device_id)}')"/>
+          <div class="tgl-track"></div><div class="tgl-thumb"></div>
+        </label>
+      </div>
+      ${phone}
+      <div class="dev-stats-grid">
+        <div class="dstat"><div class="dstat-l">RECEIVED</div><div class="dstat-v">${d.total}</div></div>
+        <div class="dstat"><div class="dstat-l">FORWARDED</div><div class="dstat-v" style="color:var(--green)">${d.forwarded||0}</div></div>
+      </div>
+      <div class="dev-meta">⏱ ${ls}${d.first_seen?' · Since '+fmtDate(d.first_seen):''}</div>
+      ${errHtml}
+    </div>`;
+  }).join('');
+}
+
+function selectDevice(id) {
+  selectedDevice = id;
+  const dev = (state.devices||[]).find(x=>x.device_id===id);
+  if (dev) showDetail(dev);
+  renderDevices(state.devices||[]);
+}
+
+function showDetail(d) {
+  document.getElementById('devDetail').classList.add('open');
+  document.getElementById('detailTitle').textContent = d.display_name;
+  const loc = d.location;
+  const locHtml = loc
+    ? `<a class="map-link" href="https://maps.google.com/?q=${loc.lat},${loc.lng}" target="_blank">📍 ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)} (±${Math.round(loc.accuracy)}m)</a><br/><small style="color:var(--muted);font-size:10px">${timeAgo(loc.recorded_at)}</small>`
+    : '<span style="color:var(--muted)">No location yet</span>';
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-section">
+      <h4>Info</h4>
+      <div class="detail-row"><span>Device ID</span><strong>${esc(d.device_id)}</strong></div>
+      <div class="detail-row"><span>Display Name</span><strong>${esc(d.display_name)}</strong></div>
+      <div class="detail-row"><span>Phone #</span><strong>${esc(d.phone_number||'—')}</strong></div>
+      <div class="detail-row"><span>First Seen</span><strong>${fmtDate(d.first_seen)||'—'}</strong></div>
+      <div class="detail-row"><span>Status</span><strong style="color:${d.status==='active'?'var(--green)':d.status==='idle'?'var(--amber)':'var(--muted)'}">${d.status}</strong></div>
+      ${d.last_error?`<div style="margin-top:8px"><span class="err-badge">Error ${d.last_error}: ${esc(d.error_desc)}</span></div>`:''}
+    </div>
+    <div class="detail-section">
+      <h4>Stats</h4>
+      <div class="detail-row"><span>Total SMS</span><strong>${d.total}</strong></div>
+      <div class="detail-row"><span>Forwarded</span><strong style="color:var(--green)">${d.forwarded||0}</strong></div>
+      <div class="detail-row"><span>Last SMS</span><strong>${d.last_msg?timeAgo(d.last_msg):'—'}</strong></div>
+      <div class="detail-row"><span>Last Ping</span><strong>${d.last_seen?timeAgo(d.last_seen):'—'}</strong></div>
+    </div>
+    <div class="detail-section">
+      <h4>Location</h4>
+      ${locHtml}
+    </div>`;
+}
+
+function closeDetail() {
+  selectedDevice = null;
+  document.getElementById('devDetail').classList.remove('open');
+  renderDevices(state.devices||[]);
+}
+
+function openRename() {
+  if (!selectedDevice) return;
+  const dev = (state.devices||[]).find(x=>x.device_id===selectedDevice);
+  document.getElementById('renameInput').value = dev?.display_name||'';
+  document.getElementById('renameModal').classList.add('open');
+}
+
+async function doRename() {
+  const name = document.getElementById('renameInput').value.trim();
+  if (!name) return;
+  const r = await api('/device/rename', {method:'POST', body: JSON.stringify({device_id: selectedDevice, new_name: name})});
+  if (r) { toast('Renamed ✓','ok'); closeModal('renameModal'); load(); }
+}
+
+function openSetPhone() {
+  if (!selectedDevice) return;
+  const dev = (state.devices||[]).find(x=>x.device_id===selectedDevice);
+  document.getElementById('phoneInput').value = dev?.phone_number||'';
+  document.getElementById('phoneModal').classList.add('open');
+}
+
+async function doSetPhone() {
+  const num = document.getElementById('phoneInput').value.trim();
+  const r = await api('/device/phone', {method:'POST', body: JSON.stringify({device_id: selectedDevice, phone_number: num})});
+  if (r) { toast('Phone number saved ✓','ok'); closeModal('phoneModal'); load(); }
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function renderFeed(msgs) {
+  const el = document.getElementById('feed');
+  if (!msgs.length) { el.innerHTML='<div class="empty"><div class="empty-icon">📭</div>No messages</div>'; return; }
+  el.innerHTML = msgs.map(m=>`
+    <div class="msg">
+      <div class="msg-icon">💬</div>
+      <div>
+        <div class="msg-sender">${esc(m.sender)}<span class="dev-tag">${esc(m.device)}</span></div>
+        <div class="msg-body">${esc(m.body)}</div>
+        <div class="msg-fwd ${m.forwarded?'ok':'fail'}">${m.forwarded?'✓ Forwarded':'○ Not forwarded'}</div>
+      </div>
+      <div class="msg-time">${fmtTime(m.received_at||m.created_at)}</div>
+    </div>`).join('');
+}
+
+function renderLogs(events) {
+  const el = document.getElementById('logsContainer');
+  if (!events.length) { el.innerHTML='<div class="empty"><div class="empty-icon">📋</div>No events</div>'; return; }
+  el.innerHTML = events.map(e=>`
+    <div class="log-item log-${esc(e.event)}">
+      <div class="log-ev">${esc(e.event)}</div>
+      <div>
+        <div class="log-detail">${esc(e.detail||'—')}</div>
+        <div class="log-dev">${esc(e.device)}</div>
+      </div>
+      <div class="log-time">${fmtTime(e.created_at)}</div>
+    </div>`).join('');
+}
+
+function showTab(name) {
+  ['devices','messages','logs'].forEach(t=>{
+    document.getElementById('tab-'+t)?.classList.remove('active');
+    document.getElementById('pane-'+t).style.display = t===name?'block':'none';
+  });
+  document.getElementById('tab-'+name)?.classList.add('active');
+}
+
+async function onGlobal(el) {
+  const on=el.checked;
+  const r=await api('/toggle/global?enabled='+on,{method:'POST'});
+  if(r) toast(on?'✓ Forwarding enabled':'Forwarding paused',on?'ok':'');
+  else el.checked=!on;
+}
+
+async function onDevToggle(el,dev) {
+  const on=el.checked;
+  const r=await api(`/toggle/device?device=${encodeURIComponent(dev)}&enabled=${on}`,{method:'POST'});
+  if(r) toast(`${dev}: ${on?'enabled':'paused'}`,on?'ok':'');
+  else el.checked=!on;
+}
+
+async function clearMsgs() {
+  if(!confirm('Clear all messages?')) return;
+  const r=await api('/messages',{method:'DELETE'});
+  if(r){load();toast('Cleared','ok');}
+}
+
+function timeAgo(ts){
+  if(!ts)return'—';
+  const d=new Date((ts||'').replace(' ','T')+'Z');
+  if(isNaN(d))return ts;
+  const s=Math.floor((Date.now()-d)/1000);
+  if(s<60)return s+'s ago';
+  if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function fmtTime(ts){
+  const d=new Date((ts||'').replace(' ','T')+'Z');
+  if(isNaN(d))return ts||'';
+  return d.toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+function fmtDate(ts){
+  if(!ts)return'';
+  const d=new Date((ts||'').replace(' ','T')+'Z');
+  if(isNaN(d))return ts;
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+(type||'');
+  setTimeout(()=>t.className='toast',3000);
+}
+
+if(SEC){load();}
+setInterval(()=>{if(SEC)load();},30000);
+</script>
+</body>
+</html>
